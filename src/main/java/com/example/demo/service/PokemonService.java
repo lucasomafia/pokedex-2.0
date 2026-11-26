@@ -19,8 +19,20 @@ public class PokemonService {
         this.pokemonRepository = pokemonRepository;
     }
 
-    public List<Pokemon> listarTodos() {
-        return pokemonRepository.findAll(Sort.by("id"));
+    public List<Pokemon> listar(String nome, String tipo) {
+        Sort ordem = Sort.by("id");
+        boolean temNome = nome != null && !nome.isBlank();
+        boolean temTipo = tipo != null && !tipo.isBlank();
+        if (temNome && temTipo) {
+            return pokemonRepository.findByNameContainingIgnoreCaseAndTypesNameIgnoreCase(nome.trim(), tipo.trim(), ordem);
+        }
+        if (temNome) {
+            return pokemonRepository.findByNameContainingIgnoreCase(nome.trim(), ordem);
+        }
+        if (temTipo) {
+            return pokemonRepository.findByTypesNameIgnoreCase(tipo.trim(), ordem);
+        }
+        return pokemonRepository.findAll(ordem);
     }
 
     public Pokemon buscarPorId(Integer id) {
