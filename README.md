@@ -1,6 +1,6 @@
 # Pokédex 2.0
 
-Pokédex com os 151 Pokémon da primeira geração, agora com back-end e banco de dados. É uma evolução da Pokédex da Atividade 03: antes os dados vinham de um arquivo JSON fixo; agora o front-end em React consome uma API REST em Spring Boot, que guarda os Pokémon no MongoDB Atlas.
+Pokédex com os 151 Pokémon da primeira geração e 12 treinadores, agora com back-end e banco de dados. É uma evolução da Pokédex da Atividade 03: antes os dados vinham de um arquivo JSON fixo; agora o front-end em React consome uma API REST em Spring Boot, que guarda os dados no MongoDB Atlas.
 
 Além de listar, buscar e filtrar, a Pokédex 2.0 permite **cadastrar, editar e excluir** Pokémon pela própria interface.
 
@@ -20,7 +20,7 @@ Além de listar, buscar e filtrar, a Pokédex 2.0 permite **cadastrar, editar e 
 - Janela de detalhes ao clicar em um card.
 - Cadastro de um novo Pokémon (botão **+ Novo Pokémon**).
 - Edição e exclusão (botões **Editar** e **Excluir** na janela de detalhes).
-- Aba **Treinadores**, com o time de cada treinador.
+- Aba **Treinadores**, com as insígnias e o time de cada treinador.
 
 ## Pré-requisitos
 
@@ -43,9 +43,22 @@ O Maven não precisa estar instalado: o projeto usa o Maven Wrapper (`./mvnw`).
    ```bash
    cp .env.example .env
    ```
-4. Abra o `.env` e preencha a variável `MONGODB_URI` com a sua connection string, trocando `SENHA` pela senha do usuário.
+4. Abra o `.env` e preencha:
+   - `MONGODB_URI`: a sua connection string, com a senha do usuário no lugar de `SENHA`;
+   - `MONGODB_DATABASE`: o nome do banco. Se ficar vazio, o padrão é `pokedex`.
 
 O `.env` está no `.gitignore` e **nunca deve ser commitado**, porque contém a senha do banco. Só o `.env.example`, sem senha, vai para o repositório.
+
+### Carga inicial dos dados
+
+Os dados vêm do arquivo `Script_Pokedex.sql`, que fica na raiz do projeto. Ao subir, o back-end lê esse script e preenche as coleções que estiverem vazias:
+
+| Coleção | Origem no script | Conteúdo |
+| --- | --- | --- |
+| `pokemons` | tabelas `Pokemon`, `Types` e `Rel_Pokemon_Type` | 151 Pokémon, com os tipos embutidos em cada documento |
+| `trainers` | tabelas `Trainers` e `Rel_Trainer_Pokemon` | 12 treinadores, com as insígnias (`Badges`) e os números dos Pokémon do time |
+
+Se a coleção já tiver documentos, a carga é ignorada, então nada é duplicado ao reiniciar. Os times seguem o script, inclusive as repetições: o Koga tem três Venonat e o Lance tem dois Dragonite.
 
 ## Rodando o projeto
 
@@ -59,7 +72,7 @@ Na raiz do projeto:
 ./mvnw spring-boot:run
 ```
 
-A API fica em `http://localhost:8080/api/pokemons`.
+Rode o comando a partir da raiz, porque é lá que o back-end procura o `.env` e o `Script_Pokedex.sql`. A API fica em `http://localhost:8080/api`.
 
 ### Front-end (porta 5173)
 
@@ -75,11 +88,15 @@ A interface fica em `http://localhost:5173`. O Vite encaminha as chamadas para `
 
 ## API
 
+### Pokémon
+
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| GET | `/api/pokemons` | Lista todos os Pokémon |
+| GET | `/api/pokemons` | Lista todos os Pokémon, em ordem de número |
+| GET | `/api/pokemons?name=char` | Filtra pelo nome (parte do nome, sem diferenciar maiúsculas) |
+| GET | `/api/pokemons?type=Fire` | Filtra pelo tipo |
 | GET | `/api/pokemons/{id}` | Busca um Pokémon pelo número |
-| POST | `/api/pokemons` | Cadastra um Pokémon |
+| POST | `/api/pokemons` | Cadastra um Pokémon (`409` se o número já existir) |
 | PUT | `/api/pokemons/{id}` | Atualiza um Pokémon |
 | DELETE | `/api/pokemons/{id}` | Exclui um Pokémon |
 
@@ -101,19 +118,44 @@ Formato de um Pokémon:
 }
 ```
 
+### Treinadores
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | `/api/trainers` | Lista os 12 treinadores |
+| GET | `/api/trainers/{id}` | Busca um treinador pelo número |
+
+Formato de um treinador. `badges` são as insígnias e `pokemonIds` são os números dos Pokémon do time:
+
+```json
+{
+  "id": 1,
+  "name": "Ash",
+  "badges": 9,
+  "pokemonIds": [25, 3, 6, 9, 131, 143]
+}
+```
+
 ## Estrutura
 
 ```
 .
-├── src/main/java/...        # back-end Spring Boot (models, repositories, services, controllers)
-├── src/main/resources/      # application.properties
+├── src/main/java/com/example/demo/
+│   ├── config/          # carga inicial do Script_Pokedex.sql (pokémons e treinadores)
+│   ├── controller/      # rotas REST
+│   ├── model/           # Pokemon, Tipo, Estatisticas, Treinador
+│   ├── repository/      # acesso ao MongoDB
+│   └── service/         # regras de negócio
+├── src/main/resources/
+│   └── application.properties
 ├── frontend/
 │   └── src/
-│       ├── api/pokemons.js  # chamadas à API (GET, POST, PUT, DELETE)
-│       ├── components/      # cards, busca, filtro, detalhes, formulário, treinadores
-│       ├── data/            # lista de tipos e treinadores
+│       ├── api/pokemons.js   # chamadas à API
+│       ├── components/       # cards, busca, filtro, detalhes, formulário, treinadores
+│       ├── data/             # tipos, atributos e endereço das imagens
 │       └── App.jsx
-├── .env.example             # modelo das variáveis de ambiente
+├── Script_Pokedex.sql   # dados de origem
+├── .env.example         # modelo das variáveis de ambiente
 └── pom.xml
 ```
 

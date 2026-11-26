@@ -57,4 +57,9 @@ export async function excluirPokemon(numero) {
   await requisitar(`${URL_BASE}/${numero}`, { method: "DELETE" });
 }
 
+export async function listarTreinadores() {
+  const treinadores = await requisitar("/api/trainers");
+  return ordenarPorNumero(treinadores);
+}
+
 export { ordenarPorNumero };

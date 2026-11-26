@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import treinadores from "./data/treinadores.json";
 import { TIPOS } from "./data/tipos";
-import { listarPokemons, criarPokemon, atualizarPokemon, excluirPokemon, ordenarPorNumero } from "./api/pokemons";
+import { listarPokemons, listarTreinadores, criarPokemon, atualizarPokemon, excluirPokemon, ordenarPorNumero } from "./api/pokemons";
 import Cabecalho from "./components/Cabecalho";
 import BarraDeBusca from "./components/BarraDeBusca";
 import Filtros from "./components/Filtros";
@@ -12,6 +11,8 @@ import ListaTreinadores from "./components/ListaTreinadores";
 
 export default function App() {
   const [pokemons, definirPokemons] = useState([]);
+  const [treinadores, definirTreinadores] = useState([]);
+  const [erroTreinadores, definirErroTreinadores] = useState("");
   const [carregando, definirCarregando] = useState(true);
   const [erro, definirErro] = useState("");
   const [busca, definirBusca] = useState("");
@@ -25,6 +26,10 @@ export default function App() {
       .then(definirPokemons)
       .catch((falha) => definirErro(`Não foi possível carregar os Pokémon (${falha.message}). O back-end está rodando?`))
       .finally(() => definirCarregando(false));
+
+    listarTreinadores()
+      .then(definirTreinadores)
+      .catch((falha) => definirErroTreinadores(`Não foi possível carregar os treinadores (${falha.message}).`));
   }, []);
 
   const pokemonsFiltrados = pokemons.filter((pokemon) => {
@@ -82,6 +87,8 @@ export default function App() {
             </div>
             <ListaPokemon pokemons={pokemonsFiltrados} aoSelecionar={definirPokemonSelecionado} />
           </>
+        ) : erroTreinadores ? (
+          <p className="aviso aviso-erro" role="alert">{erroTreinadores}</p>
         ) : (
           <ListaTreinadores treinadores={treinadores} pokemons={pokemons} aoSelecionar={definirPokemonSelecionado} />
         ))}
