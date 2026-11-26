@@ -1,122 +1,107 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import treinadores from "./data/treinadores.json";
+import { TIPOS } from "./data/tipos";
+import { listarPokemons, criarPokemon, atualizarPokemon, excluirPokemon, ordenarPorNumero } from "./api/pokemons";
+import Cabecalho from "./components/Cabecalho";
+import BarraDeBusca from "./components/BarraDeBusca";
+import Filtros from "./components/Filtros";
+import ListaPokemon from "./components/ListaPokemon";
+import DetalhesPokemon from "./components/DetalhesPokemon";
+import FormularioPokemon from "./components/FormularioPokemon";
+import ListaTreinadores from "./components/ListaTreinadores";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [pokemons, definirPokemons] = useState([]);
+  const [carregando, definirCarregando] = useState(true);
+  const [erro, definirErro] = useState("");
+  const [busca, definirBusca] = useState("");
+  const [tipoSelecionado, definirTipoSelecionado] = useState("");
+  const [pokemonSelecionado, definirPokemonSelecionado] = useState(null);
+  const [pokemonEmEdicao, definirPokemonEmEdicao] = useState(null);
+  const [tela, definirTela] = useState("pokedex");
+
+  useEffect(() => {
+    listarPokemons()
+      .then(definirPokemons)
+      .catch((falha) => definirErro(`Não foi possível carregar os Pokémon (${falha.message}). O back-end está rodando?`))
+      .finally(() => definirCarregando(false));
+  }, []);
+
+  const pokemonsFiltrados = pokemons.filter((pokemon) => {
+    const buscaCombina =
+      pokemon.name.toLowerCase().includes(busca.toLowerCase()) ||
+      String(pokemon.id) === busca;
+
+    const tipoCombina =
+      tipoSelecionado === "" || pokemon.types.some((tipo) => tipo.name === tipoSelecionado);
+
+    return buscaCombina && tipoCombina;
+  });
+
+  async function salvar(pokemon) {
+    const numeroEmEdicao = pokemonEmEdicao?.id;
+    if (numeroEmEdicao) {
+      const atualizado = await atualizarPokemon(numeroEmEdicao, pokemon);
+      definirPokemons((lista) => lista.map((item) => (item.id === numeroEmEdicao ? atualizado : item)));
+    } else {
+      const criado = await criarPokemon(pokemon);
+      definirPokemons((lista) => ordenarPorNumero([...lista, criado]));
+    }
+    definirPokemonEmEdicao(null);
+    definirPokemonSelecionado(null);
+  }
+
+  async function excluir(pokemon) {
+    if (!window.confirm(`Excluir ${pokemon.name} (#${pokemon.id})? Essa ação não pode ser desfeita.`)) return;
+    try {
+      await excluirPokemon(pokemon.id);
+      definirPokemons((lista) => lista.filter((item) => item.id !== pokemon.id));
+      definirPokemonSelecionado(null);
+    } catch (falha) {
+      window.alert(`Não foi possível excluir: ${falha.message}`);
+    }
+  }
+
+  function abrirEdicao(pokemon) {
+    definirPokemonSelecionado(null);
+    definirPokemonEmEdicao(pokemon);
+  }
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      <Cabecalho tela={tela} definirTela={definirTela} />
+      <main>
+        {carregando && <p className="aviso">Carregando Pokémon...</p>}
+        {erro && <p className="aviso aviso-erro" role="alert">{erro}</p>}
+        {!carregando && !erro && (tela === "pokedex" ? (
+          <>
+            <div className="barra-acoes">
+              <BarraDeBusca busca={busca} definirBusca={definirBusca} />
+              <Filtros tipos={TIPOS} tipoSelecionado={tipoSelecionado} definirTipoSelecionado={definirTipoSelecionado} />
+              <button className="botao-primario" onClick={() => definirPokemonEmEdicao({})}>+ Novo Pokémon</button>
+            </div>
+            <ListaPokemon pokemons={pokemonsFiltrados} aoSelecionar={definirPokemonSelecionado} />
+          </>
+        ) : (
+          <ListaTreinadores treinadores={treinadores} pokemons={pokemons} aoSelecionar={definirPokemonSelecionado} />
+        ))}
+      </main>
+      {pokemonSelecionado && (
+        <DetalhesPokemon
+          pokemon={pokemonSelecionado}
+          aoFechar={() => definirPokemonSelecionado(null)}
+          aoEditar={abrirEdicao}
+          aoExcluir={excluir}
+        />
+      )}
+      {pokemonEmEdicao && (
+        <FormularioPokemon
+          pokemon={pokemonEmEdicao}
+          numerosExistentes={pokemons.map((pokemon) => pokemon.id)}
+          aoSalvar={salvar}
+          aoFechar={() => definirPokemonEmEdicao(null)}
+        />
+      )}
     </>
-  )
+  );
 }
-
-export default App
