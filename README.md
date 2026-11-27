@@ -161,5 +161,5 @@ Formato de um treinador. `badges` são as insígnias e `pokemonIds` são os núm
 
 ## Autores
 
-- João Pedro: back-end e banco de dados
-- Lucas: front-end e documentação
+- **João Pedro**: back-end e banco de dados. Script no repositório, model, repository, service, controller com as 5 rotas, carga dos 151 Pokémon e os filtros opcionais `?name=` e `?type=`.
+- **Lucas**: front-end, documentação e treinadores. Integração do React com a API, cadastro, edição e exclusão pela interface, coleção `trainers` com as rotas `/api/trainers` e este README.
